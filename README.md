@@ -160,19 +160,6 @@ Server (Express 4 + Vite Middleware)
 
 ---
 
-## 🏅 Evaluation Criteria
-
-| Parameter | Score | Proof in Codebase |
-|---|:---:|---|
-| **Code Quality** | **100%** | Strict TypeScript (`noUncheckedIndexedAccess`), pure deterministic engine separated from presentation, small single-purpose modules (<200 lines). |
-| **Security** | **100%** | Server-side API key proxy, Zod schema validation, `<user_text>` prompt injection guard, rate limiting, helmet security headers. |
-| **Efficiency** | **100%** | Zero AI calls for math, instant in-browser recalculation under a frame, 10-minute server response cache, multi-model failover cooldowns. |
-| **Testing** | **100%** | 26 unit & integration tests passing across 7 test suites, jest-axe accessibility checks. |
-| **Accessibility** | **100%** | WCAG 2.1 AA compliant, 0 axe violations, dark/light contrast verified, skip links, live regions. |
-| **Problem Alignment**| **100%** | 4 occasions, connected budget/timeline/vendors, 6 Gemini touchpoints, and deterministic fallback. |
-
----
-
 ## 🚀 Run Locally
 
 ```bash
