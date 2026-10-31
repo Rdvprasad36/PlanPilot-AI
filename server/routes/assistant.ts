@@ -10,7 +10,7 @@ router.post('/parse-intake', async (req: Request, res: Response, next: NextFunct
   try {
     const parsed = parseIntakeRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new AppError(400, 'VALIDATION_ERROR', parsed.error.errors.map((e) => e.message).join(', '));
+      throw new AppError(400, 'VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join(', '));
     }
     const result = await parseIntakeText(parsed.data.description);
     res.json({ data: result });
@@ -24,7 +24,7 @@ router.post('/extract-quote', async (req: Request, res: Response, next: NextFunc
   try {
     const parsed = extractQuoteRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new AppError(400, 'VALIDATION_ERROR', parsed.error.errors.map((e) => e.message).join(', '));
+      throw new AppError(400, 'VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join(', '));
     }
     const result = await extractQuoteData(parsed.data.category, parsed.data.quoteText);
     res.json({ data: result });
