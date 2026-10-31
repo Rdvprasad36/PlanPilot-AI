@@ -5,5 +5,5 @@ export function validateEventBrief(data: unknown): { success: boolean; data?: Ev
   if (result.success) {
     return { success: true, data: result.data };
   }
-  return { success: false, error: result.error.errors[0]?.message || 'Invalid input' };
+  return { success: false, error: result.error.issues[0]?.message || 'Invalid input' };
 }

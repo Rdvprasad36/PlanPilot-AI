@@ -131,6 +131,6 @@ export const explainTradeoffsRequestSchema = z.object({
 
 export const askPlannerRequestSchema = z.object({
   question: z.string().min(2).max(300),
-  facts: z.record(z.any()),
+  facts: z.record(z.string(), z.any()),
   conversation: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string() })).default([]),
 });

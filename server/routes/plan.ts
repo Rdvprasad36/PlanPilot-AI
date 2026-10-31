@@ -10,7 +10,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parseResult = eventBriefSchema.safeParse(req.body);
     if (!parseResult.success) {
-      throw new AppError(400, 'VALIDATION_ERROR', parseResult.error.errors.map(e => e.message).join(', '));
+      throw new AppError(400, 'VALIDATION_ERROR', parseResult.error.issues.map(e => e.message).join(', '));
     }
 
     const sanitizedBrief = sanitizeBrief(parseResult.data);
