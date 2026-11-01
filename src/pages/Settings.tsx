@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlanStore } from '../store/planStore.js';
 import { useSettingsStore } from '../store/settingsStore.js';
+import { planSchema } from '../../shared/schemas.js';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, Download, Upload, Trash2, Sun, Moon } from 'lucide-react';
 
@@ -30,10 +31,14 @@ export default function Settings() {
       fileReader.readAsText(e.target.files[0], 'UTF-8');
       fileReader.onload = (event) => {
         try {
-          const parsed = JSON.parse(event.target?.result as string);
+          const fileContents = event.target?.result;
+          if (typeof fileContents !== 'string') {
+            throw new Error('Imported file could not be read as text.');
+          }
+          const parsed = planSchema.parse(JSON.parse(fileContents));
           localStorage.setItem('planpilot_ai_current_plan_v1', JSON.stringify(parsed));
           window.location.href = '/dashboard';
-        } catch (err) {
+        } catch {
           alert('Invalid JSON file format.');
         }
       };

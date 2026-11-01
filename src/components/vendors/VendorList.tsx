@@ -23,6 +23,7 @@ export function VendorList() {
   const [category, setCategory] = useState('Catering');
   const [analyzing, setAnalyzing] = useState(false);
   const [extractedResult, setExtractedResult] = useState<ExtractedResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [copiedDraft, setCopiedDraft] = useState(false);
 
   if (!plan) return null;
@@ -31,6 +32,7 @@ export function VendorList() {
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    setAnalysisError(null);
     try {
       const data = await apiExtractQuote(category, pastedText);
       const catBudget = plan.budget.find((b) => b.category.toLowerCase().includes(category.toLowerCase()))?.planned || 100000;
@@ -50,9 +52,9 @@ export function VendorList() {
       };
       const analysis = analyzeQuote(quoteObj, catBudget, plan.brief.guests, currency);
       setExtractedResult({ quote: quoteObj, analysis });
-    } catch {
-      // Fallback
+    } catch (error) {
       setExtractedResult(null);
+      setAnalysisError(error instanceof Error ? error.message : 'Unable to analyze this quotation.');
     } finally {
       setAnalyzing(false);
     }
@@ -170,6 +172,12 @@ export function VendorList() {
           <Button onClick={handleAnalyze} disabled={analyzing || !pastedText.trim()} variant="primary" className="w-full">
             {analyzing ? 'Extracting with Gemini...' : 'Extract Fields & Check Red Flags'}
           </Button>
+
+          {analysisError && (
+            <p className="text-sm text-[#B3261E]" role="alert">
+              {analysisError}
+            </p>
+          )}
 
           {extractedResult && (
             <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-4 border border-gray-200 dark:border-gray-700 space-y-3 text-xs">

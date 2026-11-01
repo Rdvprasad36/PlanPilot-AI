@@ -134,3 +134,35 @@ export const askPlannerRequestSchema = z.object({
   plan: planSchema,
   conversation: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string() })).default([]),
 });
+
+export const aiIdeaResponseSchema = z.object({
+  group: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string(),
+  estCost: z.string(),
+});
+
+export const aiIntakeResponseSchema = z.object({
+  occasion: occasionSchema,
+  title: z.string().min(2),
+  budget: z.number().int().positive(),
+  guests: z.number().int().positive(),
+  city: z.string().min(1),
+  theme: z.string().min(1),
+  priorityCategory: z.string().optional(),
+});
+
+export const aiQuoteResponseSchema = z.object({
+  vendorName: z.string().optional(),
+  quoteAmount: z.number().int().nonnegative(),
+  pricePerPlate: z.number().int().nonnegative().nullable().optional(),
+  guestMinimum: z.number().int().positive().nullable().optional(),
+  taxIncluded: z.boolean().nullable().optional(),
+  advancePercent: z.number().int().min(0).max(100).nullable().optional(),
+  cancellationPolicy: z.string().nullable().optional(),
+});
+
+export const aiReviewResponseSchema = z.object({
+  summary: z.string().min(1),
+  nextSteps: z.array(z.string().min(1)).min(1).max(5),
+});
