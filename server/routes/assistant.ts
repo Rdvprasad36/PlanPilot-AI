@@ -50,11 +50,11 @@ router.post('/review-plan', async (req: Request, res: Response, next: NextFuncti
 // 4. POST /api/ask-planner
 router.post('/ask-planner', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { question, plan, conversation } = req.body;
-    if (!question || !plan) {
-      throw new AppError(400, 'VALIDATION_ERROR', 'Question and plan are required');
+    const parsed = askPlannerRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(400, 'VALIDATION_ERROR', parsed.error.issues.map((e) => e.message).join(', '));
     }
-    const answer = await answerPlanQuery(plan, question, conversation || []);
+    const answer = await answerPlanQuery(parsed.data.plan, parsed.data.question, parsed.data.conversation);
     res.json({ data: answer });
   } catch (err) {
     next(err);

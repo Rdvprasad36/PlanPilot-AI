@@ -9,6 +9,18 @@ import { calculateDueDate } from '../../src/engine/timeline.js';
 import { localAnswer, extractPlanFacts } from '../../src/engine/advisor.js';
 import { rankPlanInsights } from '../../src/engine/insights.js';
 
+type ConversationMessage = { role: 'user' | 'assistant'; text: string };
+
+function getErrorStatus(error: unknown): number | string {
+  if (typeof error === 'object' && error !== null) {
+    const status = (error as { status?: unknown; code?: unknown }).status;
+    const code = (error as { status?: unknown; code?: unknown }).code;
+    if (typeof status === 'number' || typeof status === 'string') return status;
+    if (typeof code === 'number' || typeof code === 'string') return code;
+  }
+  return 500;
+}
+
 export function createDeterministicPlan(brief: EventBrief, source: 'fallback' | 'local-planner' = 'fallback'): Plan {
   const occasion = brief.occasion || brief.type || 'wedding';
   const preset = OCCASION_PRESETS[occasion] || OCCASION_PRESETS.wedding;
@@ -113,14 +125,15 @@ Generate 4 creative, personalized ideas for this event (groups: 'Theme & Vibe', 
       const text = response.text;
       if (text) {
         recordModelSuccess(model);
-        const ideasParsed: any[] = JSON.parse(text);
+        const ideasParsed: unknown = JSON.parse(text);
+        if (!Array.isArray(ideasParsed)) throw new Error('AI response did not contain an idea list');
         const basePlan = createDeterministicPlan(brief, 'fallback');
         const enrichedIdeas: Idea[] = ideasParsed.map((item, idx) => ({
           id: `id_ai_${idx}`,
-          group: item.group || 'Theme & Vibe',
-          title: item.title || 'Personalized Detail',
-          description: item.description || '',
-          estCost: item.estCost || 'Estimated',
+          group: typeof item === 'object' && item !== null && 'group' in item && typeof item.group === 'string' ? item.group : 'Theme & Vibe',
+          title: typeof item === 'object' && item !== null && 'title' in item && typeof item.title === 'string' ? item.title : 'Personalized Detail',
+          description: typeof item === 'object' && item !== null && 'description' in item && typeof item.description === 'string' ? item.description : '',
+          estCost: typeof item === 'object' && item !== null && 'estCost' in item && typeof item.estCost === 'string' ? item.estCost : 'Estimated',
           pinned: idx === 0,
           dismissed: false,
         }));
@@ -135,8 +148,8 @@ Generate 4 creative, personalized ideas for this event (groups: 'Theme & Vibe', 
         setCachedResponse(cacheKey, finalPlan);
         return { plan: finalPlan, source: 'ai', modelUsed: model };
       }
-    } catch (err: any) {
-      recordModelFailure(model, err?.status || err?.code || 500);
+    } catch (err: unknown) {
+      recordModelFailure(model, getErrorStatus(err));
     }
   }
 
@@ -144,7 +157,7 @@ Generate 4 creative, personalized ideas for this event (groups: 'Theme & Vibe', 
 }
 
 // 1. Natural language intake parser
-export async function parseIntakeText(description: string): Promise<any> {
+export async function parseIntakeText(description: string): Promise<Partial<EventBrief>> {
   const client = getGoogleGenAi();
   if (!client) {
     return {
@@ -187,8 +200,8 @@ export async function parseIntakeText(description: string): Promise<any> {
         recordModelSuccess(model);
         return JSON.parse(response.text);
       }
-    } catch (err: any) {
-      recordModelFailure(model, err?.status || 500);
+    } catch (err: unknown) {
+      recordModelFailure(model, getErrorStatus(err));
     }
   }
 
@@ -204,7 +217,7 @@ export async function parseIntakeText(description: string): Promise<any> {
 }
 
 // 2. Unstructured quote extractor
-export async function extractQuoteData(category: string, quoteText: string): Promise<any> {
+export async function extractQuoteData(category: string, quoteText: string): Promise<Partial<VendorQuote>> {
   const client = getGoogleGenAi();
   if (!client) {
     return { pricePerPlate: 1500, guestMinimum: 200, taxIncluded: null, advancePercent: 40, cancellationPolicy: null };
@@ -238,8 +251,8 @@ export async function extractQuoteData(category: string, quoteText: string): Pro
         recordModelSuccess(model);
         return JSON.parse(response.text);
       }
-    } catch (err: any) {
-      recordModelFailure(model, err?.status || 500);
+    } catch (err: unknown) {
+      recordModelFailure(model, getErrorStatus(err));
     }
   }
 
@@ -291,8 +304,8 @@ Format as a 2-sentence summary and 3 prioritised bullet points for the family.`;
         const parsed = JSON.parse(response.text);
         return { ...parsed, model };
       }
-    } catch (err: any) {
-      recordModelFailure(model, err?.status || 500);
+    } catch (err: unknown) {
+      recordModelFailure(model, getErrorStatus(err));
     }
   }
 
@@ -300,7 +313,7 @@ Format as a 2-sentence summary and 3 prioritised bullet points for the family.`;
 }
 
 // 4. Grounded Q&A Assistant (English & Hinglish)
-export async function answerPlanQuery(plan: Plan, query: string, conversation: any[]): Promise<{ answer: string; model: string }> {
+export async function answerPlanQuery(plan: Plan, query: string, conversation: ConversationMessage[]): Promise<{ answer: string; model: string }> {
   const client = getGoogleGenAi();
   const local = localAnswer(plan, query);
   if (!client) {
@@ -328,8 +341,8 @@ Answer clearly in English only. Keep it under 3 sentences. Never invent amounts.
         recordModelSuccess(model);
         return { answer: response.text.trim(), model };
       }
-    } catch (err: any) {
-      recordModelFailure(model, err?.status || 500);
+    } catch (err: unknown) {
+      recordModelFailure(model, getErrorStatus(err));
     }
   }
 

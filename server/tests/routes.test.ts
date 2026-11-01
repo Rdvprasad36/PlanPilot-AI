@@ -12,6 +12,7 @@ vi.mock('../ai/client.js', () => ({
     source: 'fallback',
     modelUsed: 'mocked',
   }),
+  answerPlanQuery: vi.fn().mockResolvedValue({ answer: 'Looks good.', model: 'mocked' }),
 }));
 
 import { createApp } from '../app.js';
@@ -58,6 +59,15 @@ describe('Express API Routes', () => {
         theme: 'Modern',
         preferences: [],
       });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('POST /api/ask-planner rejects an unvalidated plan with 400', async () => {
+    const res = await request(app)
+      .post('/api/ask-planner')
+      .send({ question: 'What should I book first?', plan: { brief: {} } });
+
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });

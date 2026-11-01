@@ -9,7 +9,7 @@ export function sanitizeInput(input: string): string {
     .trim();
 }
 
-export function sanitizeBrief(brief: any): any {
+export function sanitizeBrief(brief: EventBrief): EventBrief {
   return {
     ...brief,
     title: sanitizeInput(brief.title || ''),
@@ -19,3 +19,4 @@ export function sanitizeBrief(brief: any): any {
     notes: sanitizeInput(brief.notes || ''),
   };
 }
+import { EventBrief } from '../../shared/schemas.js';

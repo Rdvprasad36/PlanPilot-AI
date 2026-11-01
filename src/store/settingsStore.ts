@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+function getStoredTheme(): 'light' | 'dark' {
+  return localStorage.getItem('planpilot_theme') === 'dark' ? 'dark' : 'light';
+}
+
 interface SettingsState {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -7,7 +11,7 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  theme: (localStorage.getItem('planpilot_theme') as 'light' | 'dark') || 'light',
+  theme: getStoredTheme(),
   toggleTheme: () =>
     set((state) => {
       const next = state.theme === 'light' ? 'dark' : 'light';

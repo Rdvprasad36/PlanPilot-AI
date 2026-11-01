@@ -14,10 +14,11 @@ export class AppError extends Error {
   }
 }
 
-export function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
-  const statusCode = err.statusCode || 500;
-  const code = err.code || 'INTERNAL_SERVER_ERROR';
-  const message = err.message || 'An unexpected error occurred';
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
+  const appError = err instanceof AppError ? err : null;
+  const statusCode = appError?.statusCode || 500;
+  const code = appError?.code || 'INTERNAL_SERVER_ERROR';
+  const message = appError?.message || 'An unexpected error occurred';
   const requestId = req.requestId || 'unknown';
 
   logger.error({ err, requestId, path: req.path }, 'Request error');
