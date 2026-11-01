@@ -197,8 +197,11 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     try {
       const review = await apiReviewPlan(plan);
       set({ aiReview: review, loading: false });
-    } catch {
-      set({ loading: false });
+    } catch (err: unknown) {
+      set({
+        loading: false,
+        error: err instanceof Error ? err.message : 'Unable to load the AI plan review.',
+      });
     }
   },
 

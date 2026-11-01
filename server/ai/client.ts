@@ -1,5 +1,15 @@
 import { Schema, Type } from '@google/genai';
-import { EventBrief, Plan, VendorQuote, Idea } from '../../shared/schemas.js';
+import { z } from 'zod';
+import {
+  EventBrief,
+  Plan,
+  VendorQuote,
+  Idea,
+  aiIdeaResponseSchema,
+  aiIntakeResponseSchema,
+  aiQuoteResponseSchema,
+  aiReviewResponseSchema,
+} from '../../shared/schemas.js';
 import { getGoogleGenAi, getAvailableModels, recordModelFailure, recordModelSuccess } from './failover.js';
 import { getCacheKey, getCachedResponse, setCachedResponse } from './cache.js';
 import { sanitizeInput } from './sanitize.js';
@@ -10,6 +20,20 @@ import { localAnswer, extractPlanFacts } from '../../src/engine/advisor.js';
 import { rankPlanInsights } from '../../src/engine/insights.js';
 
 type ConversationMessage = { role: 'user' | 'assistant'; text: string };
+
+function parseAiJson<T>(text: string, schema: z.ZodType<T>): T {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('AI response was not valid JSON');
+  }
+  const result = schema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error('AI response did not match the expected structure');
+  }
+  return result.data;
+}
 
 function getErrorStatus(error: unknown): number | string {
   if (typeof error === 'object' && error !== null) {
@@ -125,15 +149,14 @@ Generate 4 creative, personalized ideas for this event (groups: 'Theme & Vibe', 
       const text = response.text;
       if (text) {
         recordModelSuccess(model);
-        const ideasParsed: unknown = JSON.parse(text);
-        if (!Array.isArray(ideasParsed)) throw new Error('AI response did not contain an idea list');
+        const ideasParsed = parseAiJson(text, z.array(aiIdeaResponseSchema));
         const basePlan = createDeterministicPlan(brief, 'fallback');
         const enrichedIdeas: Idea[] = ideasParsed.map((item, idx) => ({
           id: `id_ai_${idx}`,
-          group: typeof item === 'object' && item !== null && 'group' in item && typeof item.group === 'string' ? item.group : 'Theme & Vibe',
-          title: typeof item === 'object' && item !== null && 'title' in item && typeof item.title === 'string' ? item.title : 'Personalized Detail',
-          description: typeof item === 'object' && item !== null && 'description' in item && typeof item.description === 'string' ? item.description : '',
-          estCost: typeof item === 'object' && item !== null && 'estCost' in item && typeof item.estCost === 'string' ? item.estCost : 'Estimated',
+          group: item.group,
+          title: item.title,
+          description: item.description,
+          estCost: item.estCost,
           pinned: idx === 0,
           dismissed: false,
         }));
@@ -198,7 +221,7 @@ export async function parseIntakeText(description: string): Promise<Partial<Even
 
       if (response.text) {
         recordModelSuccess(model);
-        return JSON.parse(response.text);
+        return parseAiJson(response.text, aiIntakeResponseSchema);
       }
     } catch (err: unknown) {
       recordModelFailure(model, getErrorStatus(err));
@@ -249,7 +272,7 @@ export async function extractQuoteData(category: string, quoteText: string): Pro
       });
       if (response.text) {
         recordModelSuccess(model);
-        return JSON.parse(response.text);
+        return parseAiJson(response.text, aiQuoteResponseSchema);
       }
     } catch (err: unknown) {
       recordModelFailure(model, getErrorStatus(err));
@@ -301,7 +324,7 @@ Format as a 2-sentence summary and 3 prioritised bullet points for the family.`;
 
       if (response.text) {
         recordModelSuccess(model);
-        const parsed = JSON.parse(response.text);
+        const parsed = parseAiJson(response.text, aiReviewResponseSchema);
         return { ...parsed, model };
       }
     } catch (err: unknown) {
@@ -325,9 +348,16 @@ export async function answerPlanQuery(plan: Plan, query: string, conversation: C
 
   for (const model of models) {
     try {
+      const recentConversation = conversation
+        .slice(-6)
+        .map((message) => `${message.role}: ${sanitizeInput(message.text)}`)
+        .join('\n');
       const prompt = `You are PlanPilot AI, a professional planning assistant for celebration events.
 Answer the user's question directly, clearly, and grounded STRICTLY in these verified plan facts:
 ${JSON.stringify(facts, null, 2)}
+
+Recent conversation:
+${recentConversation || '(none)'}
 
 User Question: "${sanitizeInput(query)}"
 Answer clearly in English only. Keep it under 3 sentences. Never invent amounts.`;
