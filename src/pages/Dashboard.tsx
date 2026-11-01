@@ -9,13 +9,15 @@ import { IdeaGrid } from '../components/ideas/IdeaGrid';
 import { Button } from '../components/ui/Button';
 import { Sparkles, Bot, DollarSign, Calendar, Building2, Lightbulb, Printer, Settings, Plus } from 'lucide-react';
 
+type DashboardTab = 'assistant' | 'budget' | 'timeline' | 'vendors' | 'ideas';
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const plan = usePlanStore((state) => state.plan);
   const loadSaved = usePlanStore((state) => state.loadSaved);
   const clear = usePlanStore((state) => state.clear);
 
-  const [activeTab, setActiveTab] = useState<'assistant' | 'budget' | 'timeline' | 'vendors' | 'ideas'>('assistant');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('assistant');
 
   useEffect(() => {
     if (!plan) {
@@ -26,7 +28,7 @@ export default function Dashboard() {
 
   if (!plan) return null;
 
-  const tabs = [
+  const tabs: Array<{ id: DashboardTab; label: string; icon: typeof Bot }> = [
     { id: 'assistant', label: 'Overview & Assistant', icon: Bot },
     { id: 'budget', label: 'Budget & Tradeoffs', icon: DollarSign },
     { id: 'timeline', label: 'Timeline & Runsheet', icon: Calendar },
@@ -89,7 +91,7 @@ export default function Dashboard() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                   isSel
                     ? 'border-[#5B3FD9] text-[#5B3FD9]'

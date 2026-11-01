@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { usePlanStore } from '../../store/planStore.js';
-import { analyzeQuote } from '../../engine/quotes.js';
+import { analyzeQuote, QuoteAnalysis } from '../../engine/quotes.js';
 import { formatCurrency } from '../../engine/money.js';
+import { VendorQuote } from '../../../shared/schemas.js';
 import { apiExtractQuote } from '../../services/api.js';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Building2, Sparkles, AlertCircle, Copy, Check, Plus, Trash2 } from 'lucide-react';
+
+interface ExtractedResult {
+  quote: VendorQuote;
+  analysis: QuoteAnalysis;
+}
 
 export function VendorList() {
   const plan = usePlanStore((state) => state.plan);
@@ -16,7 +22,7 @@ export function VendorList() {
   const [pastedText, setPastedText] = useState('₹1500 per plate, minimum 250 plates, 50% advance, no cancellation after booking');
   const [category, setCategory] = useState('Catering');
   const [analyzing, setAnalyzing] = useState(false);
-  const [extractedResult, setExtractedResult] = useState<any>(null);
+  const [extractedResult, setExtractedResult] = useState<ExtractedResult | null>(null);
   const [copiedDraft, setCopiedDraft] = useState(false);
 
   if (!plan) return null;

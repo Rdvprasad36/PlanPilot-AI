@@ -78,9 +78,10 @@ export const usePlanStore = create<PlanState>((set, get) => ({
       clearInterval(timer);
       savePlanToStorage(plan);
       set({ plan, loading: false, thinkingSeconds: 0 });
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearInterval(timer);
-      set({ error: err.message || 'Failed to generate plan', loading: false, thinkingSeconds: 0 });
+      const message = err instanceof Error ? err.message : 'Failed to generate plan';
+      set({ error: message, loading: false, thinkingSeconds: 0 });
     }
   },
 
